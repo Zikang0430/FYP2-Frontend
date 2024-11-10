@@ -1,22 +1,3 @@
-# Camera and Media Library App
-
-This is a Camera application built with React Native, Expo Camera, and Media Library. The app allows users to capture and save photos to their device.
-
-# Author : Khaoula's DEV Tutos
-# Date : 22 July 2024
-
-# Description :
-
-## Features
-
-- Capture photos using the device camera
-- Save photos to the device's media library
-- View the last saved photo
-- Zoom in and out
-- Toggle flash and torch
-- Switch between front and back cameras
-- Animated shutter effect
-
 ## Technologies Used
 
 - React Native
@@ -24,13 +5,6 @@ This is a Camera application built with React Native, Expo Camera, and Media Lib
 - Expo Camera
 - Expo Media Library
 - @react-native-community/slider
-
-## Components and Hooks
-
-- `CameraView`: This component from Expo Camera is used to display the camera view.
-- `useCameraPermissions`: This hook is used to request and check camera permissions.
-- `usePermissions` from Expo Media Library: This hook is used to request and check media library permissions.
-- `Button`: Custom button component to handle various camera actions.
 
 ## Setup and Installation
 
