@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Button } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -14,6 +14,9 @@ export default function App() {
         flash: 'off',
     });
     const [recentPhotos, setRecentPhotos] = useState([]);
+    const [uploadedImageUri, setUploadedImageUri] = useState(null);
+    const [loading, setLoading] = useState(false); // Loading state
+    const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
     const cameraRef = useRef(null);
 
     useEffect(() => {
@@ -21,24 +24,6 @@ export default function App() {
             getRecentPhotos();
         }
     }, [cameraPermission, mediaLibraryPermissionResponse]);
-
-    if (!cameraPermission || !mediaLibraryPermissionResponse) {
-        return <View />;
-    }
-
-    if (!cameraPermission.granted || mediaLibraryPermissionResponse.status !== 'granted') {
-        return (
-            <View style={styles.container}>
-                <Text>We need camera and media library permissions to continue.</Text>
-                <TouchableOpacity style={styles.button} onPress={() => {
-                    requestCameraPermission();
-                    requestMediaLibraryPermission();
-                }}>
-                    <Text style={styles.buttonText}>Grant Permissions</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
 
     const getRecentPhotos = async () => {
         if (mediaLibraryPermissionResponse.status === 'granted') {
@@ -63,6 +48,39 @@ export default function App() {
             ...prevProps,
             flash: prevProps.flash === 'off' ? 'on' : 'off',
         }));
+    };
+
+    const uploadPhoto = async (uri) => {
+        setLoading(true); // Start loading
+        const formData = new FormData();
+        formData.append('image', {
+            uri,  // Ensure this is the correct URI for the file
+            name: 'photo.jpg',  // Assign a file name
+            type: 'image/png',  // Specify the MIME type based on your image format
+        });
+    
+        try {
+            const response = await fetch('http://192.168.0.111:8000/upload/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                body: formData,
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            setUploadedImageUri(data.image_url); // Assuming the server returns the URL in 'image_url'
+            setModalVisible(true); // Show the modal with uploaded image
+        } catch (error) {
+            console.error("Upload failed:", error);
+            Alert.alert("Upload Failed", "There was an error uploading your image.");
+        } finally {
+            setLoading(false); // Stop loading
+        }
     };
 
     return (
@@ -93,12 +111,20 @@ export default function App() {
                     if (cameraRef.current) {
                         const photo = await cameraRef.current.takePictureAsync();
                         await MediaLibrary.saveToLibraryAsync(photo.uri);
+                        await uploadPhoto(photo.uri);
                         getRecentPhotos();
                     }
                 }}>
                     <Icon name="camera-alt" size={32} color="black" />
                 </TouchableOpacity>
             </View>
+
+            {loading && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#007AFF" />
+                    <Text style={styles.loadingText}>Uploading photo...</Text>
+                </View>
+            )}
 
             <View style={styles.recentPhotoContainer}>
                 <View style={styles.albumHeader}>
@@ -113,6 +139,27 @@ export default function App() {
                     ))}
                 </ScrollView>
             </View>
+
+            {/* Modal for Uploaded Image Confirmation */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Uploaded Image</Text>
+                        {uploadedImageUri && (
+                            <Image
+                                source={{ uri: uploadedImageUri }}
+                                style={styles.uploadedImage}
+                            />
+                        )}
+                        <Button title="Confirm" onPress={() => setModalVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -193,5 +240,44 @@ const styles = StyleSheet.create({
         width: '30%',
         height: 100,
         borderRadius: 8,
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: 'white',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    uploadedImage: {
+        width: 200,
+        height: 200,
+        borderRadius: 10,
+        marginBottom: 15,
     },
 });
