@@ -4,6 +4,10 @@ import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, Act
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Dimensions } from 'react-native';
+
+const screenWidth = Dimensions.get('window').width;
+const photoSize = (screenWidth - 40) / 4; // 4 columns with spacing
 
 export default function App() {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -19,6 +23,17 @@ export default function App() {
     const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
     const cameraRef = useRef(null);
 
+
+    useEffect(() => {
+        (async () => {
+            const cameraStatus = await Camera.requestPermissionsAsync();
+            const mediaLibraryStatus = await MediaLibrary.requestPermissionsAsync();
+            if (cameraStatus.status === 'granted' && mediaLibraryStatus.status === 'granted') {
+                getRecentPhotos();
+            }
+        })();
+    }, []);
+
     useEffect(() => {
         if (cameraPermission?.granted && mediaLibraryPermissionResponse?.status === 'granted') {
             getRecentPhotos();
@@ -32,7 +47,9 @@ export default function App() {
                 mediaType: MediaLibrary.MediaType.photo,
                 first: 12,
             });
-            setRecentPhotos(assets.map(asset => asset.uri));
+            const uris = assets.map(asset => asset.uri);
+            console.log('Fetched URIs:', uris); // Check if URIs are retrieved
+            setRecentPhotos(uris);
         }
     };
 
@@ -134,8 +151,10 @@ export default function App() {
                     </TouchableOpacity>
                 </View>
                 <ScrollView contentContainerStyle={styles.photoGrid}>
-                    {recentPhotos.map((photoUri, index) => (
-                        <Image key={index} source={{ uri: photoUri }} style={styles.recentPhoto} />
+                    {recentPhotos.slice(0, 12).map((photoUri, index) => (
+                        <TouchableOpacity key={index} onPress={() => uploadPhoto(photoUri)}>
+                            <Image source={{ uri: photoUri }} style={styles.recentPhoto} />
+                        </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
@@ -237,9 +256,10 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     recentPhoto: {
-        width: '30%',
-        height: 100,
+        width: photoSize,
+        height: photoSize,
         borderRadius: 8,
+        margin: 5,
     },
     loadingOverlay: {
         position: 'absolute',
