@@ -1,13 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Button } from 'react-native';
+import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Button, RefreshControl } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Dimensions } from 'react-native';
 
 const screenWidth = Dimensions.get('window').width;
-const photoSize = (screenWidth - 40) / 4; // 4 columns with spacing
+const photoSize = (screenWidth - 40) / 5; // 4 columns with spacing
 
 export default function App() {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -22,14 +22,22 @@ export default function App() {
     const [loading, setLoading] = useState(false); // Loading state
     const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
     const cameraRef = useRef(null);
-
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const serverIP = '192.168.0.5';
 
     useEffect(() => {
         (async () => {
-            const cameraStatus = await Camera.requestPermissionsAsync();
-            const mediaLibraryStatus = await MediaLibrary.requestPermissionsAsync();
-            if (cameraStatus.status === 'granted' && mediaLibraryStatus.status === 'granted') {
+            const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+            const { status: mediaLibraryStatus } = await MediaLibrary.requestPermissionsAsync();
+
+            setHasCameraPermission(cameraStatus === 'granted');
+            setHasMediaLibraryPermission(mediaLibraryStatus === 'granted');
+
+            if (mediaLibraryStatus === 'granted') {
                 getRecentPhotos();
+            } else {
+                console.error('Media Library permission not granted.');
+                Alert.alert('Permission Required', 'Please grant Media Library access to use this feature.');
             }
         })();
     }, []);
@@ -40,16 +48,53 @@ export default function App() {
         }
     }, [cameraPermission, mediaLibraryPermissionResponse]);
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        // whole page will be refreshed
+        await getRecentPhotos();
+        setIsRefreshing(false);
+    };
+
     const getRecentPhotos = async () => {
-        if (mediaLibraryPermissionResponse.status === 'granted') {
-            const { assets } = await MediaLibrary.getAssetsAsync({
-                sortBy: [[MediaLibrary.SortBy.creationTime, false]],
-                mediaType: MediaLibrary.MediaType.photo,
-                first: 12,
-            });
-            const uris = assets.map(asset => asset.uri);
-            console.log('Fetched URIs:', uris); // Check if URIs are retrieved
-            setRecentPhotos(uris);
+        try {
+            if (mediaLibraryPermissionResponse?.status === 'granted') {
+                // Get all albums
+                const albums = await MediaLibrary.getAlbumsAsync();
+                let allAssets = [];
+
+                // Fetch photos from each album
+                for (const album of albums) {
+                    const { assets } = await MediaLibrary.getAssetsAsync({
+                        album: album.id, // Fetch photos for the current album
+                        sortBy: MediaLibrary.SortBy.modificationTime, // Sort by creation time
+                        mediaType: MediaLibrary.MediaType.photo, // Only photos
+                        first: 10, // Adjust the number of photos per album
+                    });
+                    allAssets = allAssets.concat(assets); // Combine all photos
+                }
+
+                // Sort all fetched photos by time (latest first)
+                allAssets.sort((a, b) => b.modificationTime - a.modificationTime);
+
+                // Extract URIs from the sorted photos
+                const uris = allAssets.map(asset => asset.uri);
+
+                // Display the urls and date taken after convert in the console
+                for (const asset of allAssets) {
+                    console.log('URI:', asset.uri);
+                    console.log('Date taken:', new Date(asset.modificationTime));
+                }
+
+                // limit the number of photos to display
+                uris.length = 32;
+
+                setRecentPhotos(uris); // Save the sorted URIs to state
+            } else {
+                console.error('Media Library permission not granted.');
+                Alert.alert('Permission Required', 'Please grant Media Library access to use this feature.');
+            }
+        } catch (error) {
+            console.error('Error fetching photos from all albums:', error);
         }
     };
 
@@ -71,24 +116,24 @@ export default function App() {
         setLoading(true); // Start loading
         const formData = new FormData();
         formData.append('image', {
-            uri,  // Ensure this is the correct URI for the file
-            name: 'photo.jpg',  // Assign a file name
-            type: 'image/png',  // Specify the MIME type based on your image format
+            uri, // Ensure this is the correct URI for the file
+            name: 'photo.jpg', // Assign a file name
+            type: 'image/png', // Specify the MIME type based on your image format
         });
-    
+
         try {
-            const response = await fetch('http://192.168.0.111:8000/upload/', {
+            const response = await fetch('http://' + serverIP + ':8000/upload/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
                 body: formData,
             });
-    
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-    
+
             const data = await response.json();
             setUploadedImageUri(data.image_url); // Assuming the server returns the URL in 'image_url'
             setModalVisible(true); // Show the modal with uploaded image
@@ -101,7 +146,19 @@ export default function App() {
     };
 
     return (
-        <View style={styles.container}>
+        <ScrollView
+            contentContainerStyle={styles.container}
+            refreshControl={
+                <RefreshControl
+                    refreshing={isRefreshing}
+                    onRefresh={handleRefresh}
+                    colors={['#4CAF50', '#FF9800', '#F44336']}
+                    progressBackgroundColor="#E0E0E0"
+                    size="large"
+                    tintColor="#4CAF50"
+                />
+            }
+        >
             <Text style={styles.title}>Visual Search System</Text>
 
             <View style={styles.cameraContainer}>
@@ -118,9 +175,6 @@ export default function App() {
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleSwitchCamera}>
                         <Icon name="flip-camera-ios" size={28} color="white" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Alert.alert("History", "View search history here.")}>
-                        <Icon name="history" size={28} color="white" />
                     </TouchableOpacity>
                 </View>
 
@@ -143,6 +197,13 @@ export default function App() {
                 </View>
             )}
 
+            {isRefreshing && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#007AFF" />
+                    <Text style={styles.loadingText}>Refreshing...</Text>
+                </View>
+            )}
+
             <View style={styles.recentPhotoContainer}>
                 <View style={styles.albumHeader}>
                     <Text style={styles.albumText}>Search from Album</Text>
@@ -151,7 +212,7 @@ export default function App() {
                     </TouchableOpacity>
                 </View>
                 <ScrollView contentContainerStyle={styles.photoGrid}>
-                    {recentPhotos.slice(0, 12).map((photoUri, index) => (
+                    {recentPhotos.slice(0, 32).map((photoUri, index) => (
                         <TouchableOpacity key={index} onPress={() => uploadPhoto(photoUri)}>
                             <Image source={{ uri: photoUri }} style={styles.recentPhoto} />
                         </TouchableOpacity>
@@ -159,7 +220,6 @@ export default function App() {
                 </ScrollView>
             </View>
 
-            {/* Modal for Uploaded Image Confirmation */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -179,14 +239,14 @@ export default function App() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F0F5',
+        backgroundColor: '#ECEFF1',
         paddingHorizontal: 20,
         paddingTop: 60,
         alignItems: 'center',
@@ -258,7 +318,7 @@ const styles = StyleSheet.create({
     recentPhoto: {
         width: photoSize,
         height: photoSize,
-        borderRadius: 8,
+        borderRadius: 0,
         margin: 5,
     },
     loadingOverlay: {
@@ -269,7 +329,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        zIndex: 1,
     },
     loadingText: {
         marginTop: 10,
@@ -300,4 +361,11 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 15,
     },
+    noPhotosText: {
+        fontSize: 16,
+        color: '#888',
+        textAlign: 'center',
+        marginTop: 20,
+    },
+
 });
