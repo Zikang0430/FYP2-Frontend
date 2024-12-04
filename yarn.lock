@@ -820,6 +820,13 @@
     "@babel/helper-string-parser" "^7.25.9"
     "@babel/helper-validator-identifier" "^7.25.9"
 
+"@egjs/hammerjs@^2.0.17":
+  version "2.0.17"
+  resolved "https://registry.yarnpkg.com/@egjs/hammerjs/-/hammerjs-2.0.17.tgz#5dc02af75a6a06e4c2db0202cae38c9263895124"
+  integrity sha512-XQsZgjm2EcVUiZQf11UBJQfmZeEmOW8DpI1gsFeln6w0ae0ii4dMQEQ0kjl6DspdWX1aGY1/loyXnP0JS06e/A==
+  dependencies:
+    "@types/hammerjs" "^2.0.36"
+
 "@expo/bunyan@^4.0.0":
   version "4.0.1"
   resolved "https://registry.npmjs.org/@expo/bunyan/-/bunyan-4.0.1.tgz"
@@ -1286,6 +1293,11 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@miblanchard/react-native-slider@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.npmjs.org/@miblanchard/react-native-slider/-/react-native-slider-1.5.0.tgz"
+  integrity sha512-8Zguehw7u0cgzpc4F31QjmmaWH1lZAQGXX2b6S6Ck1ABKhBp+F7SD5qH8g8VEu2z9LnDWgOvXMM2Txzw4rYpyA==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz"
@@ -1318,6 +1330,18 @@
   version "0.11.0"
   resolved "https://registry.npmjs.org/@pkgjs/parseargs/-/parseargs-0.11.0.tgz"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
+
+"@react-hook/latest@^1.0.2":
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/@react-hook/latest/-/latest-1.0.3.tgz"
+  integrity sha512-dy6duzl+JnAZcDbNTfmaP3xHiKtbXYOaz3G51MGVljh548Y8MWzTr+PHLOfvpypEVW9zwvl+VyKjbWKEVbV1Rg==
+
+"@react-hook/throttle@^2.2.0":
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/@react-hook/throttle/-/throttle-2.2.0.tgz"
+  integrity sha512-LJ5eg+yMV8lXtqK3lR+OtOZ2WH/EfWvuiEEu0M3bhR7dZRfTyEJKxH1oK9uyBxiXPtWXiQggWbZirMCXam51tg==
+  dependencies:
+    "@react-hook/latest" "^1.0.2"
 
 "@react-native-community/slider@4.5.5":
   version "4.5.5"
@@ -1539,6 +1563,11 @@
   integrity sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==
   dependencies:
     "@types/node" "*"
+
+"@types/hammerjs@^2.0.36":
+  version "2.0.46"
+  resolved "https://registry.yarnpkg.com/@types/hammerjs/-/hammerjs-2.0.46.tgz#381daaca1360ff8a7c8dff63f32e69745b9fb1e1"
+  integrity sha512-ynRvcq6wvqexJ9brDMS4BnBLzmr0e14d6ZJTEShTBWKymQiHwlAyGu0ZPEFI2Fh1U53F7tN9ufClWM5KvqkKOw==
 
 "@types/istanbul-lib-coverage@*", "@types/istanbul-lib-coverage@^2.0.0":
   version "2.0.6"
@@ -2605,7 +2634,7 @@ expo-asset@~11.0.1:
 
 expo-camera@~16.0.7:
   version "16.0.7"
-  resolved "https://registry.yarnpkg.com/expo-camera/-/expo-camera-16.0.7.tgz#45e73a86c63106639cf1ff611a365d79e9d5842e"
+  resolved "https://registry.npmjs.org/expo-camera/-/expo-camera-16.0.7.tgz"
   integrity sha512-F4msGjXMa2WJ6Gest9HVA8i0txwfuwNSbGtlbgcTr5givNWfxIwx5DuW+i7w+Xstv2YqSJL3qFAAIZgHfygHTQ==
   dependencies:
     invariant "^2.2.4"
@@ -2631,6 +2660,40 @@ expo-font@~13.0.1:
   integrity sha512-8JE47B+6cLeKWr5ql8gU6YsPHjhrz1vMrTqYMm72No/8iW8Sb/uL4Oc0dpmbjq3hLLXBY0xPBQOgU7FQ6Y04Vg==
   dependencies:
     fontfaceobserver "^2.1.0"
+
+expo-image-cropper@^1.0.9:
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/expo-image-cropper/-/expo-image-cropper-1.0.9.tgz#8e865385096cf4b489855bbaac09c0336a869ec1"
+  integrity sha512-pwZ1Lsk3V0cTgFS0cit/gTsGdChit2A8uhAmyZDYIB3gHhLIUrUidIjfb80n3abEnh/n1/7GoP61KECcgMBu3Q==
+
+expo-image-editor@^1.7.1:
+  version "1.7.1"
+  resolved "https://registry.npmjs.org/expo-image-editor/-/expo-image-editor-1.7.1.tgz"
+  integrity sha512-0fq9cG69ofYDsMWDVAzc5z1sv6Z6FSUzY2vDZGeT4APJrzPzf+qAnusELfHyNC8KDF1rY9XfpAKEgSWvIw/+hg==
+  dependencies:
+    "@miblanchard/react-native-slider" "^1.5.0"
+    "@react-hook/throttle" "^2.2.0"
+    modal-enhanced-react-native-web "^0.2.0"
+    no-scroll "^2.1.1"
+
+expo-image-loader@~5.0.0:
+  version "5.0.0"
+  resolved "https://registry.npmjs.org/expo-image-loader/-/expo-image-loader-5.0.0.tgz"
+  integrity sha512-Eg+5FHtyzv3Jjw9dHwu2pWy4xjf8fu3V0Asyy42kO+t/FbvW/vjUixpTjPtgKQLQh+2/9Nk4JjFDV6FwCnF2ZA==
+
+expo-image-manipulator@~13.0.5:
+  version "13.0.5"
+  resolved "https://registry.yarnpkg.com/expo-image-manipulator/-/expo-image-manipulator-13.0.5.tgz#ca111f9c3864391ccd598b727fe2348e447e7e86"
+  integrity sha512-ILBwBKATmO1469VS0o1dQq2iQwekMq32XCyNaeQ9gw9+2NBoN6Z64bRHEZkPxhHe6ULDM+zOTOL32/k+iVluYQ==
+  dependencies:
+    expo-image-loader "~5.0.0"
+
+expo-image-picker@~16.0.3:
+  version "16.0.3"
+  resolved "https://registry.npmjs.org/expo-image-picker/-/expo-image-picker-16.0.3.tgz"
+  integrity sha512-c4IOqIQOtx8puWWU4fVsJhuGiAhH6gAIdrVzhimOXSEUHnfxCckRYzvznbd/0cuvaA5y9H0CSYrxpTUc/0WNVw==
+  dependencies:
+    expo-image-loader "~5.0.0"
 
 expo-keep-awake@~14.0.1:
   version "14.0.1"
@@ -3013,6 +3076,11 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.4,
   resolved "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz"
   integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
+hamt_plus@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/hamt_plus/-/hamt_plus-1.0.2.tgz#e21c252968c7e33b20f6a1b094cd85787a265601"
+  integrity sha512-t2JXKaehnMb9paaYA7J0BX8QQAY8lwfQ9Gjf4pg/mk4krt+cmwmU652HOoWonf+7+EQV97ARPMhhVgU1ra2GhA==
+
 has-flag@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/has-flag/-/has-flag-3.0.0.tgz"
@@ -3065,6 +3133,13 @@ hermes-parser@0.25.1:
   integrity sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==
   dependencies:
     hermes-estree "0.25.1"
+
+hoist-non-react-statics@^3.3.0:
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz#ece0acaf71d62c2969c2ec59feff42a4b1a85b45"
+  integrity sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==
+  dependencies:
+    react-is "^16.7.0"
 
 hosted-git-info@^7.0.0:
   version "7.0.2"
@@ -4011,6 +4086,11 @@ mkdirp@^1.0.3, mkdirp@^1.0.4:
   resolved "https://registry.npmjs.org/mkdirp/-/mkdirp-1.0.4.tgz"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
+modal-enhanced-react-native-web@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.npmjs.org/modal-enhanced-react-native-web/-/modal-enhanced-react-native-web-0.2.0.tgz"
+  integrity sha512-ZJGTt12wqId068TjHNw0yyHEkTlVrZX+mqtr6hpRchH2v4na/UFxOHz+YF86mJ7+LN20UlqpkYVmKWJPw+CO5Q==
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz"
@@ -4059,6 +4139,11 @@ nice-try@^1.0.4:
   version "1.0.5"
   resolved "https://registry.npmjs.org/nice-try/-/nice-try-1.0.5.tgz"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
+
+no-scroll@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.npmjs.org/no-scroll/-/no-scroll-2.1.1.tgz"
+  integrity sha512-YTzGAJOo/B6hkodeT5SKKHpOhAzjMfkUCCXjLJwjWk2F4/InIg+HbdH9kmT7bKpleDuqLZDTRy2OdNtAj0IVyQ==
 
 node-abort-controller@^3.1.1:
   version "3.1.1"
@@ -4448,7 +4533,7 @@ prompts@^2.3.2:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-prop-types@^15.8.1:
+prop-types@^15.7.2, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -4515,7 +4600,7 @@ react-devtools-core@^5.3.1:
     shell-quote "^1.6.1"
     ws "^7"
 
-react-is@^16.13.1:
+react-is@^16.13.1, react-is@^16.7.0:
   version "16.13.1"
   resolved "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
@@ -4524,6 +4609,21 @@ react-is@^18.0.0:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
+
+react-native-gesture-handler@~2.20.2:
+  version "2.20.2"
+  resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-2.20.2.tgz#73844c8e9c417459c2f2981bc4d8f66ba8a5ee66"
+  integrity sha512-HqzFpFczV4qCnwKlvSAvpzEXisL+Z9fsR08YV5LfJDkzuArMhBu2sOoSPUF/K62PCoAb+ObGlTC83TKHfUd0vg==
+  dependencies:
+    "@egjs/hammerjs" "^2.0.17"
+    hoist-non-react-statics "^3.3.0"
+    invariant "^2.2.4"
+    prop-types "^15.7.2"
+
+react-native-image-crop-picker@^0.41.6:
+  version "0.41.6"
+  resolved "https://registry.yarnpkg.com/react-native-image-crop-picker/-/react-native-image-crop-picker-0.41.6.tgz#de2c00102f4c934848fa11ff2335f29f5dc6b3e3"
+  integrity sha512-oyEVkiJX1cnjYJolQluOqXxz9xhLHrv+pyCs7+jA87yaa110/0jv1UCqxjVjxueKug7zk/UnjG7i9Ks1cGyLpA==
 
 react-native@0.76.3:
   version "0.76.3"
@@ -4608,6 +4708,13 @@ recast@^0.21.0:
     esprima "~4.0.0"
     source-map "~0.6.1"
     tslib "^2.0.1"
+
+recoil@^0.7.7:
+  version "0.7.7"
+  resolved "https://registry.yarnpkg.com/recoil/-/recoil-0.7.7.tgz#c5f2c843224384c9c09e4a62c060fb4c1454dc8e"
+  integrity sha512-8Og5KPQW9LwC577Vc7Ug2P0vQshkv1y3zG3tSSkWMqkWSwHmE+by06L8JtnGocjW6gcCvfwB3YtrJG6/tWivNQ==
+  dependencies:
+    hamt_plus "1.0.2"
 
 regenerate-unicode-properties@^10.2.0:
   version "10.2.0"

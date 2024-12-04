@@ -1,10 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Button, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, Image, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Button, RefreshControl, ImageBackground, TouchableWithoutFeedback } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Dimensions } from 'react-native';
+import ImageCropOverlay from 'expo-image-cropper'; 
+import 'react-native-gesture-handler';
 
 const screenWidth = Dimensions.get('window').width;
 const photoSize = (screenWidth - 40) / 5; // 4 columns with spacing
@@ -19,25 +21,29 @@ export default function App() {
     });
     const [recentPhotos, setRecentPhotos] = useState([]);
     const [uploadedImageUri, setUploadedImageUri] = useState(null);
+    const [oginalImageUri, setOginalImageUri] = useState(null);
     const [loading, setLoading] = useState(false); // Loading state
     const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
     const cameraRef = useRef(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const serverIP = '192.168.0.5';
-
+    const serverIP = '192.168.0.111';
+    const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const [imagePath, setImagePath] = useState(null);
+    
     useEffect(() => {
         (async () => {
-            const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-            const { status: mediaLibraryStatus } = await MediaLibrary.requestPermissionsAsync();
+            const cameraStatus = await Camera.requestCameraPermissionsAsync();
+            const mediaLibraryStatus = await MediaLibrary.requestPermissionsAsync();
 
-            setHasCameraPermission(cameraStatus === 'granted');
-            setHasMediaLibraryPermission(mediaLibraryStatus === 'granted');
-
-            if (mediaLibraryStatus === 'granted') {
+            if (mediaLibraryStatus.status === 'granted') {
                 getRecentPhotos();
             } else {
-                console.error('Media Library permission not granted.');
-                Alert.alert('Permission Required', 'Please grant Media Library access to use this feature.');
+                Alert.alert(
+                    'Permission Required',
+                    'Please enable Media Library access in your device settings to use this feature.'
+                );
             }
         })();
     }, []);
@@ -46,8 +52,136 @@ export default function App() {
         if (cameraPermission?.granted && mediaLibraryPermissionResponse?.status === 'granted') {
             getRecentPhotos();
         }
-    }, [cameraPermission, mediaLibraryPermissionResponse]);
+        console.log('Crop modal visibility:', cropModalVisible);
+    }, [cameraPermission, mediaLibraryPermissionResponse, cropModalVisible]);
 
+    const handleManualCrop = () => {
+        if (!uploadedImageUri) {
+            Alert.alert('No Image', 'Please upload an image first.');
+            return;
+        }
+        console.log('Crop button pressed.');
+        setCropModalVisible(true); // 先设置裁剪模态框可见
+        console.log('Crop modal state updated:', true);
+    };
+    
+    // State to manage cropping modal visibility
+    const [cropModalVisible, setCropModalVisible] = useState(false);
+    
+    // State to store the cropped image
+    const [croppedImageUri, setCroppedImageUri] = useState(null);
+    
+    // Function to handle the cropping result
+    const handleCropResult = async (result) => {
+        try {
+            if (result?.uri) {
+                setCroppedImageUri(result.uri); // Save the cropped image URI
+                Alert.alert('Crop Successful', 'Image cropped successfully!');
+    
+                // Optionally send the cropped image to the backend
+                await sendToBackend(result.uri);
+    
+                setCropModalVisible(false); // Close the cropping modal
+            } else {
+                Alert.alert('Crop Cancelled', 'No changes were made.');
+            }
+        } catch (error) {
+            console.error('Error during cropping:', error);
+            Alert.alert('Error', 'Failed to crop the image.');
+        }
+    };
+    
+    const sendToBackend = async (uri) => {
+        const formData = new FormData();
+        formData.append('image', {
+            uri,
+            name: 'cropped_image.jpg',
+            type: 'image/jpeg',
+        });
+    
+        try {
+            const response = await fetch(`http://${serverIP}:8000/upload/`, {
+                method: 'POST',
+                body: formData,
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            Alert.alert("Upload Successful", JSON.stringify(data));
+        } catch (error) {
+            console.error("Upload failed:", error);
+            Alert.alert("Error", "Failed to upload cropped image.");
+        }
+    };
+    
+    const handleImageLoad = (event) => {
+        const { width, height } = event.nativeEvent.source;
+    
+        // 计算宽高比例
+        const aspectRatio = width / height;
+    
+        // 初始化缩放后的宽高
+        let scaledWidth = width;
+        let scaledHeight = height;
+    
+        // 限制宽度不超过屏幕宽度的 90%
+        if (scaledWidth > screenWidth * 0.9) {
+            scaledWidth = screenWidth * 0.9;
+            scaledHeight = scaledWidth / aspectRatio;
+        }
+    
+        // 限制高度不超过屏幕高度的 70%
+        if (scaledHeight > screenHeight * 0.7) {
+            scaledHeight = screenHeight * 0.7;
+            scaledWidth = scaledHeight * aspectRatio;
+        }
+    
+        setImageDimensions({ width: scaledWidth, height: scaledHeight });
+    };
+    
+    const sendCoordinatesToBackend = async (x, y, imagePath) => {
+        console.log("Normalized coordinates sent to backend:", { x, y });
+        console.log("API endpoint:", `http://${serverIP}:8000/crop_and_process/`);
+        try {
+            const response = await fetch(`http://${serverIP}:8000/crop_and_process/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_path: imagePath,
+                    x: x, // Normalized x-coordinate
+                    y: y, // Normalized y-coordinate
+                }),
+            });
+    
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            Alert.alert('Response', JSON.stringify(data));
+        } catch (error) {
+            console.error('Error sending coordinates to backend:', error);
+            Alert.alert('Error', 'Failed to send coordinates to the backend.');
+        }
+    };
+    
+    // Ensure `x` and `y` are normalized before sending
+    const handleImagePress = (event) => {
+        const { locationX, locationY } = event.nativeEvent;
+        const relativeX = locationX / imageDimensions.width; // Normalize by image width
+        const relativeY = locationY / imageDimensions.height; // Normalize by image height
+    
+        console.log("Tapped coordinates:", { locationX, locationY });
+        console.log("Normalized coordinates:", { relativeX, relativeY });
+        
+        const cleanedImagePath = imagePath.replace(`http://${serverIP}:8000/media/`, '');
+        console.log("Cleaned image path:", cleanedImagePath);
+
+        sendCoordinatesToBackend(relativeX, relativeY, cleanedImagePath); // Pass normalized values
+    };
+    
     const handleRefresh = async () => {
         setIsRefreshing(true);
         // whole page will be refreshed
@@ -68,7 +202,7 @@ export default function App() {
                         album: album.id, // Fetch photos for the current album
                         sortBy: MediaLibrary.SortBy.modificationTime, // Sort by creation time
                         mediaType: MediaLibrary.MediaType.photo, // Only photos
-                        first: 10, // Adjust the number of photos per album
+                        first: 20, // Adjust the number of photos per album
                     });
                     allAssets = allAssets.concat(assets); // Combine all photos
                 }
@@ -80,10 +214,10 @@ export default function App() {
                 const uris = allAssets.map(asset => asset.uri);
 
                 // Display the urls and date taken after convert in the console
-                for (const asset of allAssets) {
-                    console.log('URI:', asset.uri);
-                    console.log('Date taken:', new Date(asset.modificationTime));
-                }
+                // for (const asset of allAssets) {
+                //     console.log('URI:', asset.uri);
+                //     console.log('Date taken:', new Date(asset.modificationTime));
+                // }
 
                 // limit the number of photos to display
                 uris.length = 32;
@@ -113,41 +247,44 @@ export default function App() {
     };
 
     const uploadPhoto = async (uri) => {
-        setLoading(true); // Start loading
+        console.log('Uploading photo:', uri);
+        setLoading(true);
         const formData = new FormData();
         formData.append('image', {
-            uri, // Ensure this is the correct URI for the file
-            name: 'photo.jpg', // Assign a file name
-            type: 'image/png', // Specify the MIME type based on your image format
+            uri, 
+            name: 'photo.jpg',
+            type: 'image/jpeg',
         });
-
+    
         try {
-            const response = await fetch('http://' + serverIP + ':8000/upload/', {
+            const response = await fetch(`http://${serverIP}:8000/upload/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
                 body: formData,
             });
-
+    
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-
+    
             const data = await response.json();
-            setUploadedImageUri(data.image_url); // Assuming the server returns the URL in 'image_url'
-            setModalVisible(true); // Show the modal with uploaded image
+            console.log("Image, data:", data.image_url);
+            setImagePath(data.image_url); // Set the imagePath here
+            setUploadedImageUri(data.image_url);
+            setOginalImageUri(uri);
+            setModalVisible(true);
         } catch (error) {
-            console.error("Upload failed:", error);
-            Alert.alert("Upload Failed", "There was an error uploading your image.");
+            console.error('Upload failed:', error);
+            Alert.alert('Upload Failed', 'There was an error uploading your image.');
         } finally {
-            setLoading(false); // Stop loading
+            setLoading(false);
         }
     };
 
     return (
         <ScrollView
-            contentContainerStyle={styles.container}
             refreshControl={
                 <RefreshControl
                     refreshing={isRefreshing}
@@ -158,6 +295,7 @@ export default function App() {
                     tintColor="#4CAF50"
                 />
             }
+            contentContainerStyle={styles.container}
         >
             <Text style={styles.title}>Visual Search System</Text>
 
@@ -178,14 +316,17 @@ export default function App() {
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={styles.roundButton} onPress={async () => {
-                    if (cameraRef.current) {
-                        const photo = await cameraRef.current.takePictureAsync();
-                        await MediaLibrary.saveToLibraryAsync(photo.uri);
-                        await uploadPhoto(photo.uri);
-                        getRecentPhotos();
-                    }
-                }}>
+                <TouchableOpacity
+                    style={styles.roundButton}
+                    onPress={async () => {
+                        if (cameraRef.current) {
+                            const photo = await cameraRef.current.takePictureAsync();
+                            await MediaLibrary.saveToLibraryAsync(photo.uri);
+                            await uploadPhoto(photo.uri);
+                            getRecentPhotos();
+                        }
+                    }}
+                >
                     <Icon name="camera-alt" size={32} color="black" />
                 </TouchableOpacity>
             </View>
@@ -197,27 +338,62 @@ export default function App() {
                 </View>
             )}
 
-            {isRefreshing && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#007AFF" />
-                    <Text style={styles.loadingText}>Refreshing...</Text>
-                </View>
+            {cropModalVisible && (
+                <Modal
+                    transparent={true}
+                    visible={cropModalVisible}
+                    onRequestClose={() => setCropModalVisible(false)}
+                >
+                    <View style={styles.cropOverlayContainer}>
+                        <ImageCropOverlay
+                            visible={cropModalVisible}
+                            sourceUri={oginalImageUri}
+                            onCancel={() => {
+                                console.log('Crop modal canceled.');
+                                setCropModalVisible(false);
+                            }}
+                            onDone={(result) => {
+                                console.log('Crop result:', result);
+                                handleCropResult(result);
+                            }}
+                            ratio={1 / 1} // 设置裁剪比例
+                           
+                        />
+                    </View>
+                </Modal>
             )}
+
 
             <View style={styles.recentPhotoContainer}>
                 <View style={styles.albumHeader}>
                     <Text style={styles.albumText}>Search from Album</Text>
                     <TouchableOpacity onPress={() => Alert.alert("See All", "View all photos.")}>
-                        <Text style={styles.seeAllText}>See All</Text>
+                        <Text styler={styles.seeAllText}>See All</Text>
                     </TouchableOpacity>
-                </View>
-                <ScrollView contentContainerStyle={styles.photoGrid}>
-                    {recentPhotos.slice(0, 32).map((photoUri, index) => (
-                        <TouchableOpacity key={index} onPress={() => uploadPhoto(photoUri)}>
-                            <Image source={{ uri: photoUri }} style={styles.recentPhoto} />
+                    {mediaLibraryPermissionResponse?.status !== 'granted' && (
+                        <TouchableOpacity
+                            style={styles.permissionButton}
+                            onPress={() => requestMediaLibraryPermission()}
+                        >
+                            <Text style={styles.permissionButtonText}>Grant Permission</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                    )}
+                </View>
+                {mediaLibraryPermissionResponse?.status === 'granted' ? (
+                    <ScrollView contentContainerStyle={styles.photoGrid}>
+                        {recentPhotos.slice(0, 60).map((photoUri, index) => (
+                            <TouchableOpacity key={index} onPress={() => uploadPhoto(photoUri)}>
+                                <Image source={{ uri: photoUri }} style={styles.recentPhoto} />
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <View style={styles.noPermissionContainer}>
+                        <Text style={styles.noPhotosText}>
+                            Permission to access photos is required to display albums.
+                        </Text>
+                    </View>
+                )}
             </View>
 
             <Modal
@@ -227,25 +403,67 @@ export default function App() {
                 onRequestClose={() => setModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View
+                        style={[
+                            styles.modalContent,
+                            {
+                                width: Math.min(screenWidth * 0.9, imageDimensions.width), // 限制宽度不超过屏幕的 90%
+                                height: Math.min(screenHeight * 0.7, imageDimensions.height), // 限制高度不超过屏幕的 70%
+                            },
+                        ]}
+                    >
+                        {/* 右上角的关闭按钮 */}
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Icon name="close" size={24} color="#333" />
+                        </TouchableOpacity>
+
                         <Text style={styles.modalTitle}>Uploaded Image</Text>
                         {uploadedImageUri && (
-                            <Image
-                                source={{ uri: uploadedImageUri }}
-                                style={styles.uploadedImage}
-                            />
+                            <TouchableWithoutFeedback onPress={handleImagePress}>
+                                <Image
+                                    source={{ uri: uploadedImageUri }}
+                                    style={{
+                                        width: Math.min(screenWidth * 0.9, imageDimensions.width), // 动态调整宽度
+                                        height: Math.min(screenHeight * 0.7, imageDimensions.height), // 动态调整高度
+                                        resizeMode: "contain", // 保持图片比例
+                                    }}
+                                    onLoad={handleImageLoad}
+                                />
+                            </TouchableWithoutFeedback>
                         )}
-                        <Button title="Confirm" onPress={() => setModalVisible(false)} />
+
+                        <TouchableOpacity
+                            style={styles.cropButton}
+                            onPress={() => {
+                                console.log('Crop button pressed.');
+                                handleManualCrop();
+                            }}
+                        >
+                            <Icon name="crop" size={24} color="#007AFF" />
+                            <Text style={styles.cropButtonText}>Crop</Text>
+                        </TouchableOpacity>
+                        
+                        <Image
+                            source={{ uri: oginalImageUri }}
+                            style={{ width: 300, height: 300 }}
+                            onError={(error) => console.error('Image load error:', error)}
+                            onLoad={() => console.log('Image loaded successfully!')}
+                        />
+
                     </View>
                 </View>
             </Modal>
+
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1, // 让内容正确填充父视图
         backgroundColor: '#ECEFF1',
         paddingHorizontal: 20,
         paddingTop: 60,
@@ -259,8 +477,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     cameraContainer: {
-        flex: 2,
+        flex: 1,
         width: '100%',
+        height: 500, // 确保分配足够高度
         borderRadius: 10,
         overflow: 'hidden',
         marginBottom: 20,
@@ -344,11 +563,12 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContent: {
-        width: 300,
-        padding: 20,
         backgroundColor: 'white',
         borderRadius: 10,
         alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        overflow: 'hidden',
     },
     modalTitle: {
         fontSize: 18,
@@ -367,5 +587,71 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
     },
-
-});
+    permissionButton: {
+        padding: 10,
+        backgroundColor: '#007AFF',
+        borderRadius: 5,
+        marginVertical: 10,
+    },
+    permissionButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    noPermissionContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        position: 'relative', // 必须相对定位以放置关闭按钮
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        padding: 5,
+        backgroundColor: '#f8f8f8',
+        borderRadius: 50,
+    },
+    cropButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f0f0',
+        padding: 10,
+        borderRadius: 5,
+        marginTop: 15,
+    },
+    cropButtonText: {
+        fontSize: 14,
+        color: '#007AFF',
+        marginLeft: 5,
+    },
+    uploadedImage: {
+        borderRadius: 10,
+    },
+    cropOverlayContainer: {
+        width: '50%',
+        height: '50%',
+        alignSelf: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+}); 
